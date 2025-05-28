@@ -5,7 +5,7 @@ services:
     image: mageai/mageai:0.8.69
     container_name: mage
     ports:
-      - "6789:6789"
+      - "${PT_STACK}6789:6789"
     volumes:
       - /mnt/shared/mage_data:/home/src
     environment:
