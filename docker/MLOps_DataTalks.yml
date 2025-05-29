@@ -5,9 +5,25 @@ services:
     image: mageai/mageai:0.8.69
     container_name: mage
     ports:
-      - "${PT_STACK}6789:6789"
+      - "${PT_STACK}789:6789"
     volumes:
-      - /mnt/shared/mage_data:/home/src
+      - /mnt/shared/stack${PT_STACK}/mage_data:/home/src
     environment:
       - USER_CODE_PATH=/home/src
     restart: unless-stopped
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.12.2
+    container_name: mlflow
+    ports:
+      - "${PT_STACK}500:5000"
+    volumes:
+      - /mnt/shared/stack${PT_STACK}/mlflow_data:/mlflow
+    environment:
+      - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:///mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+    restart: unless-stopped    
