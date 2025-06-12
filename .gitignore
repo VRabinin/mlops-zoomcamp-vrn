@@ -181,3 +181,4 @@ artifacts/
 mlruns/
 mlflow.db
 *.code-workspace
+mlflow_data/

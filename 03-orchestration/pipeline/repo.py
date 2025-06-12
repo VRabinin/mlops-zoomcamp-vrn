@@ -84,7 +84,8 @@ def train_model(context, X_train, y_train, X_val, y_val, dv):
 
         y_pred = booster.predict(valid)
         rmse = root_mean_squared_error(y_val, y_pred)
-        intercept = booster.get_score(importance_type='weight').get('Intercept', 0.0)
+        
+        intercept = xgb.
         mlflow.log_metric("intercept", intercept)
         context.log.info(f"RMSE: {rmse}")
         context.log.info(f"Intercept: {intercept}")
@@ -94,7 +95,7 @@ def train_model(context, X_train, y_train, X_val, y_val, dv):
             pickle.dump(dv, f_out)
         mlflow.log_artifact("models/preprocessor.b", artifact_path="preprocessor")
 
-        mlflow.xgboost.log_model(booster, artifact_path="models")
+        mlflow.xgboost.log_model(booster, artifact_path="models_mlflow")
 
         return run.info.run_id
 
