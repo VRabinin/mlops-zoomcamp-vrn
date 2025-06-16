@@ -84,11 +84,10 @@ def train_model(context, X_train, y_train, X_val, y_val, dv):
 
         y_pred = booster.predict(valid)
         rmse = root_mean_squared_error(y_val, y_pred)
-        
-        intercept = xgb.
-        mlflow.log_metric("intercept", intercept)
+        #intercept = 0
+        #mlflow.log_metric("intercept", intercept)
         context.log.info(f"RMSE: {rmse}")
-        context.log.info(f"Intercept: {intercept}")
+        #context.log.info(f"Intercept: {intercept}")
         mlflow.log_metric("rmse", rmse)
 
         with open("models/preprocessor.b", "wb") as f_out:
