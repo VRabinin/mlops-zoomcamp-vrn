@@ -10,7 +10,7 @@ from sklearn.metrics import root_mean_squared_error
 import mlflow
 
 mlflow.set_tracking_uri("http://mlflow:5000")
-mlflow.set_experiment("nyc-taxi-experiment")
+mlflow.set_experiment("nyc-taxi-experiment-3")
 
 models_folder = Path('models')
 models_folder.mkdir(exist_ok=True)
@@ -84,17 +84,18 @@ def train_model(context, X_train, y_train, X_val, y_val, dv):
 
         y_pred = booster.predict(valid)
         rmse = root_mean_squared_error(y_val, y_pred)
-        #intercept = 0
-        #mlflow.log_metric("intercept", intercept)
-        context.log.info(f"RMSE: {rmse}")
-        #context.log.info(f"Intercept: {intercept}")
+        stdev = y_val.std()
+        intercept = y_pred.mean() - (y_val.mean() / stdev) * rmse
+        context.log.info(f"RMSE: {rmse}, Stdev: {stdev}, Intercept: {intercept}")
+        mlflow.log_metric("intercept", intercept)
         mlflow.log_metric("rmse", rmse)
+        mlflow.log_metric("stdev", stdev)
 
         with open("models/preprocessor.b", "wb") as f_out:
             pickle.dump(dv, f_out)
         mlflow.log_artifact("models/preprocessor.b", artifact_path="preprocessor")
 
-        mlflow.xgboost.log_model(booster, artifact_path="models_mlflow")
+        mlflow.xgboost.log_model(booster, artifact_path="mlflow_models")
 
         return run.info.run_id
 
@@ -118,9 +119,9 @@ def run_pipeline(context, config: MyOpConfig):
     context.log.info(f"Reading validation data for {next_year}-{next_month}")   
     df_val = read_dataframe(context, year=next_year, month=next_month)
 
-    context.log.info(f"Createing feature matrix for train dataset")
+    context.log.info(f"Creating feature matrix for train dataset")
     X_train, dv = create_X(df_train)
-    context.log.info(f"Createing feature matrix for validation dataset")   
+    context.log.info(f"Creating feature matrix for validation dataset")   
     X_val, _ = create_X(df_val, dv)
 
     target = 'duration'

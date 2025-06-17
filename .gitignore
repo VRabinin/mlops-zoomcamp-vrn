@@ -182,3 +182,5 @@ mlruns/
 mlflow.db
 *.code-workspace
 mlflow_data/
+minio_data/
+output/

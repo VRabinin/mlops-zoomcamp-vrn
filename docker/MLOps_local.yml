@@ -26,24 +26,55 @@ services:
       timeout: 3s
       retries: 5
 
+  minio:
+    image: minio/minio
+    container_name: mlops-minio
+    hostname: minio
+    ports:
+      - "9000:9000"      # S3 API
+      - "9001:9001"      # Web UI
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}  
+    volumes:
+      - ../minio_data:/data
+    command: server /data --console-address ":9001"
+
+  create-bucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5;
+        mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
+        mc admin accesskey create  myminio --access-key ${MINIO_ACCESS_KEY:-myuserserviceaccount} --secret-key  ${MINIO_SECRET_KEY:-myuserserviceaccountpassword};
+        mc mb -p myminio/mlflow;
+      "
+
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.12.2
+    image: ghcr.io/mlflow/mlflow:v2.22.0
     container_name: mlops-mlflow
     hostname: mlflow
     ports:
       - "5005:5000"
     volumes:
-      - ../mlflow_data:/mlflow
+      - ../mlflow_data:/mlflow:rw
     environment:
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY:-myuserserviceaccount}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY:-myuserserviceaccountpassword} 
       - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
     command: >
-      /bin/sh -c "pip install psycopg2-binary && mlflow server
+      /bin/sh -c "pip install psycopg2-binary boto3 && mlflow server
       --backend-store-uri postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-postgres}/mlflow
-      --default-artifact-root /mlflow/artifacts
+      --default-artifact-root "s3://mlflow"
       --host 0.0.0.0"
     restart: unless-stopped    
     depends_on:
-      - postgres    
+      - postgres
+      - minio
+      - create-bucket
 
   dagster:
     #env_file:
@@ -60,6 +91,11 @@ services:
       DAGSTER_PG_USERNAME: ${POSTGRES_USER}
       DAGSTER_PG_PASSWORD: ${POSTGRES_PASSWORD}   
       DAGSTER_PG_PORT: 5432
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000      
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-myuserserviceaccount}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-myuserserviceaccountpassword}
+    volumes:
+      - ../03-orchestration/pipeline:/opt/dagster/app
     ports:
       - "${DAGSTER_PORT:-3000}:3000"       
     depends_on:

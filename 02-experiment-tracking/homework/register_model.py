@@ -12,10 +12,13 @@ HPO_EXPERIMENT_NAME = "random-forest-hyperopt"
 EXPERIMENT_NAME = "random-forest-best-models"
 RF_PARAMS = ['max_depth', 'n_estimators', 'min_samples_split', 'min_samples_leaf', 'random_state']
 
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+mlflow.set_tracking_uri("http://127.0.0.1:5005")
 mlflow.set_experiment(EXPERIMENT_NAME)
 mlflow.sklearn.autolog()
 
+os.environ["AWS_ACCESS_KEY_ID"] = "myuserserviceaccount"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "myuserserviceaccountpassword"
+os.environ["AWS_ENDPOINT_URL_S3"] = "http://localhost:9000"
 
 def load_pickle(filename):
     with open(filename, "rb") as f_in:
@@ -26,6 +29,7 @@ def train_and_log_model(data_path, params):
     X_train, y_train = load_pickle(os.path.join(data_path, "train.pkl"))
     X_val, y_val = load_pickle(os.path.join(data_path, "val.pkl"))
     X_test, y_test = load_pickle(os.path.join(data_path, "test.pkl"))
+    dv = load_pickle(os.path.join(data_path, "dv.pkl"))
 
     with mlflow.start_run():
         new_params = {}
@@ -40,6 +44,9 @@ def train_and_log_model(data_path, params):
         mlflow.log_metric("val_rmse", val_rmse)
         test_rmse = root_mean_squared_error(y_test, rf.predict(X_test))
         mlflow.log_metric("test_rmse", test_rmse)
+        with open("models/dict_vectorizer.pkl", "wb") as f_out:
+            pickle.dump(dv, f_out)
+        mlflow.log_artifact("models/dict_vectorizer.pkl", artifact_path="preprocessor")
 
 
 @click.command()
