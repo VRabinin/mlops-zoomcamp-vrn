@@ -8,3 +8,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
   SELECT 'CREATE DATABASE dagster'
   WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'dagster')\gexec
 EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+  SELECT 'CREATE DATABASE monitoring'
+  WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'monitoring')\gexec
+EOSQL

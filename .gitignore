@@ -184,3 +184,4 @@ mlflow.db
 mlflow_data/
 minio_data/
 output/
+workspace/
