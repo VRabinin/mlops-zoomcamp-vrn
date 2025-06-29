@@ -2,6 +2,9 @@ version: '3.8'
 
 name: mlops-zoomcamp
 
+volumes: 
+  grafana_data: {}
+
 services:
   postgres:
     hostname: ${POSTGRES_HOST:-postgres}
@@ -100,3 +103,21 @@ services:
       - "${DAGSTER_PORT:-3000}:3000"       
     depends_on:
       - postgres
+
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8991:8080"
+
+  grafana:
+    image: grafana/grafana-enterprise
+    user: "472"
+    ports:
+      - "3999:3000"
+    volumes:
+      - ../05-monitoring/config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      - ../05-monitoring/config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ../05-monitoring/dashboards:/opt/grafana/dashboards
+    restart: always
