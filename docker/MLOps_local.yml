@@ -121,3 +121,13 @@ services:
       - ../05-monitoring/config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
       - ../05-monitoring/dashboards:/opt/grafana/dashboards
     restart: always
+
+  localstack:
+    container_name: mlops-localstack
+    hostname: localstack
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+
